@@ -352,3 +352,8 @@ button:active {
   border-radius: 8px;
   cursor: pointer;
 }
+
+.event:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
