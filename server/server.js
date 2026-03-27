@@ -4,6 +4,9 @@ const Event = require("./models/Event");
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
+const https = require("https");
+const { parse } = require("csv-parse/sync");
+const { DateTime } = require("luxon");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +22,39 @@ function checkAdminCode(req, res, next) {
   }
 
   next();
+}
+
+function fetchTextFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        let data = "";
+
+        response.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        response.on("end", () => {
+          resolve(data);
+        });
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+}
+
+function normalizeCategory(category) {
+  if (!category) return "official";
+  return category.trim() === "User Event" ? "clan" : "official";
+}
+
+function parseLondonDateTime(dateStr, timeStr) {
+  const value = DateTime.fromFormat(`${dateStr} ${timeStr}`, "d/M/yyyy HH:mm", {
+    zone: "Europe/London",
+  });
+
+  return value;
 }
 
 app.get("/", (req, res) => {
@@ -60,6 +96,83 @@ app.post("/api/events", checkAdminCode, async (req, res) => {
     res.status(201).json(newEvent);
   } catch (error) {
     res.status(500).json({ error: "Error creating event" });
+  }
+});
+
+app.post("/api/events/import-sheet", checkAdminCode, async (req, res) => {
+  try {
+    const sheetUrl = process.env.GOOGLE_SHEET_CSV_URL;
+
+    if (!sheetUrl) {
+      return res.status(500).json({
+        error: "Missing GOOGLE_SHEET_CSV_URL in environment variables",
+      });
+    }
+
+    const csvText = await fetchTextFromUrl(sheetUrl);
+
+    const records = parse(csvText, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    });
+
+    const createdEvents = [];
+    const skippedRows = [];
+
+    for (let index = 0; index < records.length; index++) {
+      const row = records[index];
+
+      const date = row.Date;
+      const start = row.Start;
+      const end = row.End;
+      const eventName = row.Event;
+      const category = row.Category;
+
+      if (!date || !start || !end || !eventName) {
+        skippedRows.push({
+          row: index + 2,
+          reason: "Missing required fields",
+        });
+        continue;
+      }
+
+      const startDateTime = parseLondonDateTime(date, start);
+      let endDateTime = parseLondonDateTime(date, end);
+
+      if (!startDateTime.isValid || !endDateTime.isValid) {
+        skippedRows.push({
+          row: index + 2,
+          reason: "Invalid date or time format",
+        });
+        continue;
+      }
+
+      if (endDateTime <= startDateTime) {
+        endDateTime = endDateTime.plus({ days: 1 });
+      }
+
+      const newEvent = new Event({
+        name: eventName.trim(),
+        type: normalizeCategory(category),
+        startAt: startDateTime.toUTC().toJSDate(),
+        endAt: endDateTime.toUTC().toJSDate(),
+      });
+
+      await newEvent.save();
+      createdEvents.push(newEvent);
+    }
+
+    res.status(201).json({
+      message: "Sheet import completed",
+      createdCount: createdEvents.length,
+      skippedCount: skippedRows.length,
+      skippedRows,
+      createdEvents,
+    });
+  } catch (error) {
+    console.error("Import sheet error:", error);
+    res.status(500).json({ error: "Error importing events from Google Sheet" });
   }
 });
 
