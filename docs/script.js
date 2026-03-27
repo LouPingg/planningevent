@@ -1,6 +1,7 @@
 const API_BASE_URL = "https://planningevent.onrender.com";
 const API_URL = `${API_BASE_URL}/api/events`;
 const ADMIN_LOGIN_URL = `${API_BASE_URL}/api/admin/login`;
+const IMPORT_SHEET_URL = `${API_BASE_URL}/api/events/import-sheet`;
 
 const form = document.getElementById("event-form");
 const adminForm = document.getElementById("admin-form");
@@ -8,6 +9,7 @@ const adminCodeInput = document.getElementById("admin-code");
 const adminStatus = document.getElementById("admin-status");
 const logoutBtn = document.getElementById("logout-btn");
 const createSection = document.getElementById("create-section");
+const importSheetBtn = document.getElementById("import-sheet-btn");
 
 let startWindow = getStartOfHour(new Date());
 let isAdmin = localStorage.getItem("isAdmin") === "true";
@@ -187,6 +189,49 @@ form.addEventListener("submit", async (e) => {
   form.reset();
   loadTimeline();
 });
+
+if (importSheetBtn) {
+  importSheetBtn.addEventListener("click", async () => {
+    if (!isAdmin) {
+      alert("Admin access required");
+      return;
+    }
+
+    const confirmed = confirm(
+      "Import events from Google Sheet? Existing events will be kept, and duplicates will be ignored.",
+    );
+
+    if (!confirmed) return;
+
+    const adminCode = localStorage.getItem("adminCode");
+
+    try {
+      const res = await fetch(IMPORT_SHEET_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-code": adminCode,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Import failed");
+        return;
+      }
+
+      alert(
+        `Import completed.\nCreated: ${data.createdCount}\nSkipped: ${data.skippedCount}`,
+      );
+
+      loadTimeline();
+    } catch (error) {
+      console.error(error);
+      alert("Import failed");
+    }
+  });
+}
 
 async function deleteEvent(id) {
   if (!isAdmin) {
