@@ -186,6 +186,18 @@ app.post("/api/events/import-sheet", checkAdminCode, async (req, res) => {
   }
 });
 
+app.delete("/api/events/clear-all", checkAdminCode, async (req, res) => {
+  try {
+    const result = await Event.deleteMany({});
+    res.json({
+      message: "All events deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting all events" });
+  }
+});
+
 app.delete("/api/events/:id", checkAdminCode, async (req, res) => {
   try {
     const deletedEvent = await Event.findByIdAndDelete(req.params.id);

@@ -297,3 +297,28 @@ button:active {
 #timeline::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(90deg, #4a4a58 0%, #707086 100%);
 }
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.action-status {
+  margin-top: 16px;
+  min-height: 24px;
+  font-weight: 600;
+}
+
+.action-status--success {
+  color: #2ecc71;
+}
+
+.action-status--error {
+  color: #ff6b6b;
+}
+
+.action-status--info {
+  color: #74c0fc;
+}

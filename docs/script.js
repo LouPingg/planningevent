@@ -2,6 +2,7 @@ const API_BASE_URL = "https://planningevent.onrender.com";
 const API_URL = `${API_BASE_URL}/api/events`;
 const ADMIN_LOGIN_URL = `${API_BASE_URL}/api/admin/login`;
 const IMPORT_SHEET_URL = `${API_BASE_URL}/api/events/import-sheet`;
+const CLEAR_EVENTS_URL = `${API_BASE_URL}/api/events/clear-all`;
 
 const form = document.getElementById("event-form");
 const adminForm = document.getElementById("admin-form");
@@ -10,9 +11,22 @@ const adminStatus = document.getElementById("admin-status");
 const logoutBtn = document.getElementById("logout-btn");
 const createSection = document.getElementById("create-section");
 const importSheetBtn = document.getElementById("import-sheet-btn");
+const clearEventsBtn = document.getElementById("clear-events-btn");
+const actionStatus = document.getElementById("action-status");
 
 let startWindow = getStartOfHour(new Date());
 let isAdmin = localStorage.getItem("isAdmin") === "true";
+
+function setActionStatus(message, type = "") {
+  if (!actionStatus) return;
+
+  actionStatus.textContent = message;
+  actionStatus.className = "action-status";
+
+  if (type) {
+    actionStatus.classList.add(`action-status--${type}`);
+  }
+}
 
 function updateAdminUI() {
   if (isAdmin) {
@@ -22,6 +36,7 @@ function updateAdminUI() {
   } else {
     adminStatus.textContent = "Read-only mode";
     createSection.style.display = "none";
+    setActionStatus("");
   }
 }
 
@@ -134,6 +149,7 @@ adminForm.addEventListener("submit", async (e) => {
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("adminCode", code);
     updateAdminUI();
+    setActionStatus("Admin mode enabled.", "success");
     loadTimeline();
   } catch (error) {
     alert("Admin login failed");
@@ -187,6 +203,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   form.reset();
+  setActionStatus("Event created successfully.", "success");
   loadTimeline();
 });
 
@@ -204,6 +221,7 @@ if (importSheetBtn) {
     if (!confirmed) return;
 
     const adminCode = localStorage.getItem("adminCode");
+    setActionStatus("Import in progress...", "info");
 
     try {
       const res = await fetch(IMPORT_SHEET_URL, {
@@ -217,18 +235,64 @@ if (importSheetBtn) {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Import failed");
+        setActionStatus(data.error || "Import failed.", "error");
         return;
       }
 
-      alert(
-        `Import completed.\nCreated: ${data.createdCount}\nSkipped: ${data.skippedCount}`,
+      setActionStatus(
+        `Import completed. Created: ${data.createdCount}. Skipped: ${data.skippedCount}.`,
+        "success",
       );
 
       loadTimeline();
     } catch (error) {
       console.error(error);
-      alert("Import failed");
+      setActionStatus("Import failed.", "error");
+    }
+  });
+}
+
+if (clearEventsBtn) {
+  clearEventsBtn.addEventListener("click", async () => {
+    if (!isAdmin) {
+      alert("Admin access required");
+      return;
+    }
+
+    const confirmed = confirm(
+      "Are you sure you want to delete all events? This action cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    const adminCode = localStorage.getItem("adminCode");
+    setActionStatus("Deleting all events...", "info");
+
+    try {
+      const res = await fetch(CLEAR_EVENTS_URL, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-code": adminCode,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setActionStatus(data.error || "Delete failed.", "error");
+        return;
+      }
+
+      setActionStatus(
+        `All events deleted. Removed: ${data.deletedCount}.`,
+        "success",
+      );
+
+      loadTimeline();
+    } catch (error) {
+      console.error(error);
+      setActionStatus("Delete failed.", "error");
     }
   });
 }
@@ -256,6 +320,7 @@ async function deleteEvent(id) {
     return;
   }
 
+  setActionStatus("Event deleted successfully.", "success");
   loadTimeline();
 }
 
