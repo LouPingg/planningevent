@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Event Planner</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <h1>Event Planner</h1>
+
+      <section id="admin-section" class="panel">
+        <h2>Admin Access</h2>
+
+        <form id="admin-form">
+          <input
+            type="password"
+            id="admin-code"
+            placeholder="Enter admin code"
+            required
+          />
+          <button type="submit">Unlock</button>
+          <button type="button" id="logout-btn">Logout</button>
+        </form>
+
+        <p id="admin-status">Read-only mode</p>
+      </section>
+
+      <section id="create-section" class="panel">
+        <h2>Create Event</h2>
+
+        <form id="event-form">
+          <input type="text" id="name" placeholder="Event name" required />
+
+          <select id="type">
+            <option value="official">Official</option>
+            <option value="clan">Clan</option>
+          </select>
+
+          <input type="datetime-local" id="startAt" required />
+          <input type="datetime-local" id="endAt" required />
+
+          <button type="submit">Create</button>
+        </form>
+      </section>
+
+      <section class="panel planning-panel">
+        <h2>Planning</h2>
+
+        <div id="controls">
+          <button id="prev">←</button>
+          <span id="range-label"></span>
+          <button id="next">→</button>
+        </div>
+
+        <div id="timeline">
+          <div id="hours"></div>
+          <div id="rows"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
