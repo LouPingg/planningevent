@@ -92,21 +92,27 @@ function renderEvents(events) {
 
     const eventDiv = document.createElement("div");
     eventDiv.className = "event " + event.type;
-    eventDiv.innerText = event.name;
+
+    const label = document.createElement("span");
+    label.className = "event-label";
+    label.textContent = event.name;
+    eventDiv.appendChild(label);
 
     const startDiff = (start - startWindow) / (1000 * 60 * 60);
     const endDiff = (end - startWindow) / (1000 * 60 * 60);
 
     const left = Math.max(0, startDiff * 100);
-    const width = Math.max(10, (endDiff - startDiff) * 100);
+    const durationWidth = Math.max(10, (endDiff - startDiff) * 100);
 
     eventDiv.style.left = left + "px";
-    eventDiv.style.width = width + "px";
+    eventDiv.style.width = Math.max(durationWidth, 140) + "px";
     eventDiv.style.top = "5px";
 
     if (isAdmin) {
       const btn = document.createElement("button");
-      btn.innerText = "x";
+      btn.className = "delete-event-btn";
+      btn.type = "button";
+      btn.textContent = "x";
       btn.onclick = () => deleteEvent(event._id);
 
       eventDiv.appendChild(btn);
