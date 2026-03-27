@@ -4,7 +4,7 @@ const Event = require("./models/Event");
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
-const https = require("https");
+
 const { parse } = require("csv-parse/sync");
 const { DateTime } = require("luxon");
 
@@ -24,24 +24,16 @@ function checkAdminCode(req, res, next) {
   next();
 }
 
-function fetchTextFromUrl(url) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (response) => {
-        let data = "";
+async function fetchTextFromUrl(url) {
+  const response = await fetch(url);
 
-        response.on("data", (chunk) => {
-          data += chunk;
-        });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch sheet: ${response.status} ${response.statusText}`,
+    );
+  }
 
-        response.on("end", () => {
-          resolve(data);
-        });
-      })
-      .on("error", (error) => {
-        reject(error);
-      });
-  });
+  return await response.text();
 }
 
 function normalizeCategory(category) {
