@@ -1,5 +1,6 @@
-const API_URL = "http://localhost:5000/api/events";
-const ADMIN_LOGIN_URL = "http://localhost:5000/api/admin/login";
+const API_BASE_URL = "https://planningevent.onrender.com";
+const API_URL = `${API_BASE_URL}/api/events`;
+const ADMIN_LOGIN_URL = `${API_BASE_URL}/api/admin/login`;
 
 const form = document.getElementById("event-form");
 const adminForm = document.getElementById("admin-form");
