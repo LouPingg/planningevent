@@ -96,6 +96,7 @@ function renderEvents(events) {
     const label = document.createElement("span");
     label.className = "event-label";
     label.textContent = event.name;
+    label.title = event.name;
     eventDiv.appendChild(label);
 
     const startDiff = (start - startWindow) / (1000 * 60 * 60);
