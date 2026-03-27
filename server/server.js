@@ -42,11 +42,9 @@ function normalizeCategory(category) {
 }
 
 function parseLondonDateTime(dateStr, timeStr) {
-  const value = DateTime.fromFormat(`${dateStr} ${timeStr}`, "d/M/yyyy HH:mm", {
+  return DateTime.fromFormat(`${dateStr} ${timeStr}`, "d/M/yyyy HH:mm", {
     zone: "Europe/London",
   });
-
-  return value;
 }
 
 app.get("/", (req, res) => {
@@ -144,11 +142,31 @@ app.post("/api/events/import-sheet", checkAdminCode, async (req, res) => {
         endDateTime = endDateTime.plus({ days: 1 });
       }
 
+      const normalizedName = eventName.trim();
+      const normalizedType = normalizeCategory(category);
+      const normalizedStartAt = startDateTime.toUTC().toJSDate();
+      const normalizedEndAt = endDateTime.toUTC().toJSDate();
+
+      const existingEvent = await Event.findOne({
+        name: normalizedName,
+        type: normalizedType,
+        startAt: normalizedStartAt,
+        endAt: normalizedEndAt,
+      });
+
+      if (existingEvent) {
+        skippedRows.push({
+          row: index + 2,
+          reason: "Duplicate event already exists",
+        });
+        continue;
+      }
+
       const newEvent = new Event({
-        name: eventName.trim(),
-        type: normalizeCategory(category),
-        startAt: startDateTime.toUTC().toJSDate(),
-        endAt: endDateTime.toUTC().toJSDate(),
+        name: normalizedName,
+        type: normalizedType,
+        startAt: normalizedStartAt,
+        endAt: normalizedEndAt,
       });
 
       await newEvent.save();
